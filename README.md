@@ -180,6 +180,28 @@ td.dates{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);white-space
   .tb-cell{border-left:none;border-top:1px solid var(--line);}
   .tb-cell:first-child{border-top:none;}
 }
+
+/* ---------- Weekly report additions ---------- */
+.section-tag{display:flex;align-items:center;gap:12px;margin:28px 0 14px;}
+.section-tag-line{flex:1;height:1px;background:linear-gradient(90deg, transparent, var(--line) 15%, var(--line) 85%, transparent);}
+.section-tag-text{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);white-space:nowrap;}
+.section-tag-text span{color:var(--text-dim);margin:0 2px;}
+
+table.mini-table{width:100%;border-collapse:collapse;font-size:12px;}
+table.mini-table td{padding:10px 16px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+table.mini-table tr:nth-child(even){background:var(--bg-row-alt);}
+table.mini-table .m-num{font-family:'Space Grotesk',sans-serif;font-weight:600;color:var(--steel);font-size:14px;width:26px;}
+table.mini-table .m-desc{color:var(--text);font-weight:500;}
+table.mini-table .m-date{font-family:'IBM Plex Mono',monospace;color:var(--amber);white-space:nowrap;text-align:right;}
+table.mini-table .m-remark{color:var(--text-dim);font-size:11px;display:block;margin-top:3px;}
+
+.concern-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);}
+.concern-card{background:var(--bg-panel-alt);padding:14px 16px;}
+.concern-card h4{margin:0 0 9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);font-weight:500;}
+.concern-card ul{margin:0;padding-left:16px;color:var(--text-muted);font-size:12px;line-height:1.5;}
+.concern-card li{margin-bottom:7px;}
+.concern-card li:last-child{margin-bottom:0;}
+
 </style>
 </head>
 <body>
@@ -204,6 +226,57 @@ td.dates{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);white-space
       <div class="tb-value mono"><span class="dot"></span>Loaded</div>
     </div>
   </div>
+
+  <!-- ============ WEEKLY PROGRESS REPORT SECTION ============ -->
+  <div class="section-tag">
+    <div class="section-tag-line"></div>
+    <div class="section-tag-text">Weekly Progress Report — WPR No. 139 <span>·</span> 05–11 Jun 2026 <span>·</span> Issued 15-Jun-2026</div>
+    <div class="section-tag-line"></div>
+  </div>
+
+  <div class="kpi-row" id="wprKpiRow">
+    <div class="kpi c-pct"><div class="kpi-num" id="wCumAc">0%</div><div class="kpi-label">Cum. Progress (AC)</div><div class="kpi-sub" id="wCumVar">—</div></div>
+    <div class="kpi c-total"><div class="kpi-num" id="wWeekAc">0%</div><div class="kpi-label">Past Week Progress</div></div>
+    <div class="kpi c-done"><div class="kpi-num" id="wManhours">0</div><div class="kpi-label">Manhours (PTD)</div></div>
+    <div class="kpi c-prog"><div class="kpi-num" id="wManpower">0</div><div class="kpi-label">Manpower (Wk)</div></div>
+    <div class="kpi c-ns"><div class="kpi-num" id="wNearMiss">0</div><div class="kpi-label">Near Miss (PTD)</div></div>
+    <div class="kpi c-crit"><div class="kpi-num" id="wLti">0</div><div class="kpi-label">LTI / TRC (PTD)</div></div>
+  </div>
+
+  <div class="charts-row" style="grid-template-columns: 1.1fr 1fr;">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Progress by <span>Category</span></div>
+        <div class="panel-note">cumulative · baseline vs actual</div>
+      </div>
+      <div class="panel-body" style="height:300px;"><canvas id="progressChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Major <span>Milestones</span></div>
+        <div class="panel-note">per catch-up plan</div>
+      </div>
+      <div class="panel-body" style="height:300px;overflow-y:auto;padding:0;">
+        <table class="mini-table" id="milestoneTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Engineering Documents — Approved for <span>Design / Construction</span> (IFO)</div>
+      <div class="panel-note">by discipline · total scope vs. issued to date</div>
+    </div>
+    <div class="panel-body" style="height:420px;"><canvas id="docsChart"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Areas of <span>Concern</span></div></div>
+    <div class="panel-body">
+      <div class="concern-grid" id="concernGrid"></div>
+    </div>
+  </div>
+  <!-- ============ END WEEKLY PROGRESS REPORT SECTION ============ -->
 
   <div class="kpi-row">
     <div class="kpi c-total"><div class="kpi-num" id="kTotal">0</div><div class="kpi-label">Total Activities</div></div>
@@ -447,6 +520,130 @@ document.querySelectorAll('thead th').forEach(th=>{
     renderTable();
   });
 });
+
+// =================== WEEKLY PROGRESS REPORT DATA (WPR No.139) ===================
+const WPR = {
+  progress: [
+    {cat:'Temporary Facilities',          bl:92.00, ac:92.00},
+    {cat:'Basic & Detailed Engineering',  bl:99.00, ac:98.22},
+    {cat:'Procurement & Supply',          bl:72.58, ac:76.04},
+    {cat:'CPF Site Construction',         bl:38.42, ac:37.19},
+    {cat:'TFT Sud Construction Mgmt',     bl:24.59, ac:24.69},
+    {cat:'TFT Sud Commissioning Mgmt',    bl:0.00,  ac:0.00},
+    {cat:'CPF Commissioning',             bl:0.00,  ac:0.00},
+    {cat:'Start Up & Performance Test',   bl:0.00,  ac:0.00},
+    {cat:'Final Documentation',           bl:0.00,  ac:0.00},
+  ],
+  overall: {weekBl:0.08, weekAc:0.30, weekVar:0.22, cumBl:68.62, cumAc:71.05, cumVar:2.42},
+  hse: {manhoursPtd:1387700, manpowerWk:192, nearMissPtd:2, ltiPtd:0, trcPtd:0},
+  milestones: [
+    {desc:'Shutdown', date:'01-Sep-2026', remark:'Finish 30-Sep-2026 as per Catch Plan'},
+    {desc:'First Gas RFSU (Onsite)', date:'30-Sep-2026', remark:'As per Catch up plan'},
+    {desc:'LP Compressor Package RFSU (Onsite)', date:'20-Oct-2026', remark:'As per Catch up plan'},
+    {desc:'IMS System', date:'14-Feb-2028', remark:'As per Master Schedule'},
+  ],
+  // Engineering documents approved for design/construction (IFO), cumulative, by discipline
+  docs: [
+    {code:'ARC', name:'Architecture',               total:11,  ac:10},
+    {code:'CIV', name:'Civil',                       total:51,  ac:50},
+    {code:'COP', name:'Cathodic Protection',         total:50,  ac:50},
+    {code:'ELE', name:'Electrical',                  total:107, ac:106},
+    {code:'ENG', name:'General Engineering',         total:6,   ac:6},
+    {code:'HVC', name:'HVAC',                        total:17,  ac:15},
+    {code:'INS', name:'Instrumentation & Control',   total:120, ac:112},
+    {code:'MAT', name:'Materials',                   total:11,  ac:11},
+    {code:'MEC', name:'Mechanical',                  total:72,  ac:71},
+    {code:'PIP', name:'Piping',                       total:124, ac:120},
+    {code:'PJM', name:'Project Management',          total:0,   ac:0},
+    {code:'PPL', name:'Pipeline',                     total:72,  ac:72},
+    {code:'PROC',name:'Process',                      total:151, ac:139},
+    {code:'SAF', name:'Safety',                       total:42,  ac:36},
+    {code:'STR', name:'Structural',                   total:115, ac:105},
+    {code:'TEL', name:'Telecom',                      total:60,  ac:59},
+  ],
+  concerns: {
+    'Planning & Control': ['02 well pads ISA 303 and ISA 305 are ready for release, but not yet released to ENGTP for construction works as per the CA Letter.'],
+    'Procurement': ['Custom clearance is taking longer than scheduled, impacting the overall project schedule.', 'ARH dossier approval for critical items is impacting the overall project schedule.'],
+    'Engineering': ['Multiple engineering documents are on hold due to no response from the CA.', 'Existing structure upgrade subject to CTC approval may impact steel structure procurement and overall schedule, including shutdown.'],
+    'CPF Construction': ['Relocation of IR-32 clashing with pipe sleepers train 1/2.', 'Existing underground facilities relocation (nitrogen shelter, fire water pipe, IR-32) is impacting the schedule.'],
+    'Off-site Construction': ['Postponement of well availability dates communicated by the customer (ISB 306/307/308/309).', 'ENGTP has not started works for well pads ISA-303 and ISA-305 despite release to ENGTP.', 'Work remains suspended on the anodic well.', 'C3 is short of manpower for site work management — construction manager, supervisor, and civil engineer/inspector all absent.', 'Preparations for offsite pre-commissioning and commissioning must be initiated; procedure list and schedule pending submission.'],
+  }
+};
+
+// ---- KPI strip ----
+document.getElementById('wCumAc').textContent = WPR.overall.cumAc.toFixed(1)+'%';
+document.getElementById('wCumVar').textContent = (WPR.overall.cumVar>=0?'+':'')+WPR.overall.cumVar.toFixed(2)+'% vs baseline';
+document.getElementById('wWeekAc').textContent = WPR.overall.weekAc.toFixed(2)+'%';
+document.getElementById('wManhours').textContent = WPR.hse.manhoursPtd.toLocaleString();
+document.getElementById('wManpower').textContent = WPR.hse.manpowerWk;
+document.getElementById('wNearMiss').textContent = WPR.hse.nearMissPtd;
+document.getElementById('wLti').textContent = WPR.hse.ltiPtd+' / '+WPR.hse.trcPtd;
+
+// ---- Progress by category chart ----
+new Chart(document.getElementById('progressChart'), {
+  type: 'bar',
+  data: {
+    labels: WPR.progress.map(p=>p.cat),
+    datasets: [
+      {label:'Baseline (BL2 Rev.)', data: WPR.progress.map(p=>p.bl), backgroundColor:'#23364A', borderColor:'#3A5470', borderWidth:1},
+      {label:'Actual', data: WPR.progress.map(p=>p.ac), backgroundColor:'#4FA8D8'},
+    ]
+  },
+  options:{
+    indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    scales:{
+      x:{min:0,max:100, ticks:{color:'#85A0B8', callback:v=>v+'%', font:{family:"'IBM Plex Mono'", size:10.5}}, grid:{color:'#1A2C40'}},
+      y:{ticks:{color:'#C5D3E0', font:{family:"'IBM Plex Sans'", size:11.5}}, grid:{display:false}}
+    },
+    plugins:{
+      legend:{position:'top', align:'end', labels:{color:'#85A0B8', font:{family:"'IBM Plex Mono'", size:10.5}, boxWidth:12}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.x.toFixed(2)}%`}}
+    }
+  }
+});
+
+// ---- Milestones table ----
+document.getElementById('milestoneTable').innerHTML = WPR.milestones.map((m,i)=>`
+  <tr>
+    <td class="m-num">${(i+1).toString().padStart(2,'0')}</td>
+    <td class="m-desc">${m.desc}<span class="m-remark">${m.remark}</span></td>
+    <td class="m-date">${m.date}</td>
+  </tr>
+`).join('');
+
+// ---- Engineering documents by discipline chart ----
+const docsSorted = WPR.docs.filter(d=>d.total>0).sort((a,b)=>b.total-a.total);
+new Chart(document.getElementById('docsChart'), {
+  type:'bar',
+  data:{
+    labels: docsSorted.map(d=>d.name),
+    datasets:[
+      {label:'Total Documents (Scope)', data: docsSorted.map(d=>d.total), backgroundColor:'#23364A', borderColor:'#3A5470', borderWidth:1},
+      {label:'Approved (IFO, to date)', data: docsSorted.map(d=>d.ac), backgroundColor:'#3FB081'},
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    scales:{
+      x:{ticks:{color:'#C5D3E0', font:{family:"'IBM Plex Sans'", size:10.5}, maxRotation:35, minRotation:35}, grid:{display:false}},
+      y:{ticks:{color:'#85A0B8', font:{family:"'IBM Plex Mono'", size:10.5}}, grid:{color:'#1A2C40'}}
+    },
+    plugins:{
+      legend:{position:'top', align:'end', labels:{color:'#85A0B8', font:{family:"'IBM Plex Mono'", size:10.5}, boxWidth:12}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}}
+    }
+  }
+});
+
+// ---- Areas of concern ----
+document.getElementById('concernGrid').innerHTML = Object.entries(WPR.concerns).map(([cat, items])=>`
+  <div class="concern-card">
+    <h4>${cat}</h4>
+    <ul>${items.map(it=>`<li>${it}</li>`).join('')}</ul>
+  </div>
+`).join('');
+
+// =================== END WEEKLY PROGRESS REPORT ===================
 
 renderTable();
 </script>
